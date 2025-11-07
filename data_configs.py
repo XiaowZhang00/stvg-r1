@@ -1,4 +1,15 @@
 DATASETS={
+    'hcstvgv2': {
+        'video_path': './vipdata/hcstvgv2video',
+        'stride': 20,
+        'max_stride_factor': 0.5,
+        'splits': {
+            'default': {
+                'annotation_file': './hcstvgv2/anno_v2/val_marker_v2.json',
+                'pad_sec': 0.0,
+            },
+        }
+    },
     'charades': {
         'video_path': './Charades/Charades_v1',
         'stride': 20,

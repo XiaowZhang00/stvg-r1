@@ -6,5 +6,7 @@ MODEL_BASE=./outputs_video
 
 python evaluate.py \
      --model_base $MODEL_BASE \
-     --dataset charades \
-     --checkpoint_dir ckpt_charades
+     --dataset hcstvgv2 \
+     --bbox_data_file ./hcstvgv2/anno_v2/train_v2.json \
+     --mask_data_dir ./vipdata/hcstvgv2 \
+     --checkpoint_dir ./outputs_video

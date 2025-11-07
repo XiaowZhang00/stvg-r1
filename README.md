@@ -1,185 +1,176 @@
-# Time-R1: Post-Training Large Vision Language Model for Temporal Video Grounding
+# STVG-R1: Incentivizing Instance-Level Reasoning and Grounding in Videos via Reinforcement Learning
 
 <div style='display:flex; gap: 0.25rem; '>
-  <a href='https://arxiv.org/abs/2503.13377'><img src='https://img.shields.io/badge/Paper-PDF-red'></a>
-  <a href='https://huggingface.co/wwwyyy/TimeZero-Charades-7B'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Charades-blue'></a>
-  <a href='https://huggingface.co/wwwyyy/TimeZero-ActivityNet-7B'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ActivityNet-blue'></a>
+  <a href='./STVG-R1.pdf'><img src='https://img.shields.io/badge/Paper-PDF-red'></a>
+  <a href='https://huggingface.co/XiaowenZhang/stvg-r1-model-7b'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-STVG--R1-blue'></a>
 </div>
-
-
-
-Note: TimeZero is the original version
-> [**Time-R1: Post-Training Large Vision Language Model for Temporal Video Grounding**](https://arxiv.org/abs/2503.13377v2) <br>
-> Ye Wang*, Ziheng Wang*, Boshen Xu*‡, Yang Du, Kejun Lin, Zihan Xiao, Zihao Yue, Jianzhong Ju, Liang Zhang, Dingyi Yang, Xiangnan Fang, Zewen He, Zhenbo Luo, Wenxuan Wang, Junqi Lin, Jian Luan, Qin Jin† <br>
-[![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/xiaomi-research/Time-R1) [![github](https://img.shields.io/github/stars/xiaomi-research/Time-R1.svg?style=social)](https://github.com/xiaomi-research/Time-R1)[![arXiv](https://img.shields.io/badge/Arxiv-2503.13377v2-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2503.13377v2) <br>
-> [**TimeZero: Temporal Video Grounding with Reasoning-Guided LVLM**](https://arxiv.org/abs/2503.13377v1) <br>
-> Ye Wang*, Boshen Xu*, Zihao Yue, Zihan Xiao, Ziheng Wang, Liang Zhang, Dingyi Yang, Wenxuan Wang, Qin Jin† <br>
-[![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/www-Ye/Time-R1) [![github](https://img.shields.io/github/stars/www-Ye/Time-R1.svg?style=social)](https://github.com/www-Ye/Time-R1)[![arXiv](https://img.shields.io/badge/Arxiv-2503.13377v1-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2503.13377v1) <br>
-    
-
-### Updates
-
-- 🚀2025-06-20: <span style="color:yellow"><strong>The code for Time-R1 is now open-sourced at <a href="https://github.com/xiaomi-research/time-r1">https://github.com/xiaomi-research/time-r1</a>!</strong></span> It supports training and testing on Charades, ActivityNet, and TimeRFT, along with vLLM-accelerated inference for Charades, ActivityNet, TVGBench, VideoMME, MVBench, TempCompass, and EgoSchema.
-- 2025-05-27: Expanded Time-R1 ArXiv paper released! Read on [ArXiv](https://arxiv.org/abs/2503.13377).
-- 2025-03-17: TimeZero initial release! Code and evaluation scripts are now available.
-- 2025-03-17: TimeZero achieves SOTA performance on Charades-STA!
 
 ### Overview
 
-TimeZero is a reasoning-guided Large Vision-Language Model (LVLM) for Temporal Video Grounding (TVG). It excels at identifying temporal segments within videos that correspond to a given natural language query.  TimeZero achieves this entirely through a reinforcement learning approach that allows the model to reason about video-language relationships *during inference*.
+STVG-R1 is the first reinforcement learning framework for spatial–temporal video grounding. We introduce a simple yet effective object-centric visual prompting paradigm that reformulates dense per-frame coordinate prediction into a compact object ID identification task. Extensive experiments on six benchmarks demonstrate the effectiveness of our approach.
 
 Key Features:
 
-*   **Reinforcement Learning Training:** TimeZero is trained *entirely* using reinforcement learning, enhancing its ability to generate accurate temporal boundaries.
-*   **Test-Time Reasoning:** The model exhibits emergent reasoning capabilities during inference, generating a chain of thought to justify its segment predictions.
-*   **SOTA Performance:** TimeZero sets a new SOTA on the Charades-STA benchmark.
+* **Object-Centric Visual Prompt**: A simple yet effective object-centric visual prompting paradigm reformulates dense per-frame coordinate prediction into a compact object ID identification task.
+* **Reinforcement Learning Training**: STVG-R1 is trained entirely using reinforcement learning, enhancing its ability to generate accurate spatial temporal visual grounding results.
+* **Strong Zero-Shot Generalization**: STVG-R1 exhibits strong zero-shot generalization to multi-object referring video object segmentation task, despite being trained only on single-object grounding data.
+* **SOTA Performance**: STVG-R1 sets a new SOTA on the HCSTVG-v1, HCSTVG-v2, ST-Align and MeViS benchmarks.
 
 
-This README provides an overview of TimeZero, including setup instructions, the training process, and evaluation guidelines.
 
-**Example:**
+**Examples:**
 
-![image](https://github.com/user-attachments/assets/f5ac9e6b-58f5-41e9-878d-a5ae5045b155)
+![image](examples.jpg)
 
 
-**Training Visualization:**
+## Environment Configuration
 
-![0a466a4bca3bb8d9b2a2af0f15890b4](https://github.com/user-attachments/assets/df1c35f5-8c30-400b-bce6-14e1f766752c)
+The environment setup of this project is based on the configurations provided in:
 
-## Setup
+-   [GroundedSAM2](https://github.com/IDEA-Research/Grounded-SAM-2)
+-    [Time-R1](https://github.com/www-Ye/Time-R1)
+
+## Data Preprocessing
+
+Download the dataset [HCSTVG-v1](https://github.com/tzhhhh123/HC-STVG), [HCSTVG-v2](https://github.com/tzhhhh123/HC-STVG), [VidSTG](https://github.com/tzhhhh123/HC-STVG).
+
+Before training, you need to preprocess the video data.
+
+**1. Object Extraction and Tracking (Training & Inference)**
+
+We first extract all objects of interest and obtain a temporally consistent mask sequence. 
 
 ```bash
-conda create -n timezero python=3.11
-conda env create -f environment.yml
-conda activate timezero
+cd preprocess
+bash rundettrack.sh \
+    --target_mode person \
+    --video_base_dir ../hcstvg-v2/video/mnt/data1/tzh/HCVG/video_parts \
+    --base_output_dir ../vipdata/hcstvgv2 \
+    --hcvg_json_path ../hcstvgv2/anno_v2/train_v2.json
+```
+Specify the path to the HCSTVG-v2 dataset (video files, annotations, etc.).
+
+**2. Mask-to-ID Visual Prompt Generation (Training & Inference)**
+
+We convert each instance mask into a compact, unique object ID, and overlay these IDs onto video frames as visual prompts.
+
+```bash
+python mask2marker.py
+```
+
+**3. Ground-Truth ID Generation (Training Only)**
+
+For the training set, we further generate ground-truth ID labels to supervise our reinforcement learning framework.
+
+```bash
+python trainjson.py
+```
+
+**4. Video Preprocessing for Model Training (Training & Inference)**
+
+Preprocess videos with visual prompts using Qwen2.5-VL-7B processor and save them as PyTorch tensors for efficient training.
+
+```bash
+bash scripts/preprocess_video.sh
 ```
 
 ## Training
 
-TimeZero training involves the following steps:
+Train the model using GRPO algorithm for spatial-temporal video grounding.
 
-1.  **Data Preprocessing:**
-
-    Download the dataset [Charades-STA](https://github.com/jiyanggao/TALL#charades-sta-anno-download), [Charades-v1](https://huggingface.co/datasets/HuggingFaceM4/charades), [ActivityNet](https://cs.stanford.edu/people/ranjaykrishna/densevid/)
-
-    Before training, you need to preprocess the video data.
-
-    ```bash
-    bash preprocess_video.sh
-    ```
-    Specify the path to the Charades-STA dataset (video files, annotations, etc.).
-
-3.  **GRPO Training:**
-
-    ```bash
-    cd scripts
-    bash run_grpo_video.sh
-    ```
-
-    **`run_grpo_video.sh`**
-
-    ```bash
-    #!/bin/bash
-    
-    export DEBUG_MODE="false"  # Set to "true" for verbose logging during training.
-    export LOG_PATH="./debug_log.txt"
-    
-    torchrun --nproc_per_node="4" \
-    --nnodes="1" \
-    --node_rank="0" \
-    --master_addr="127.0.0.1" \
-    --master_port="12361" \
-    src/open_r1/grpo_video.py \
-    --deepspeed scripts/zero3_offload.json \
-    --output_dir $OUTDIR \
-    --model_name_or_path mllm/Qwen2.5-VL-7B-Instruct \
-    --preprocessed_data_path ./Charades_preprocessed_data_maxpix_3584 \
-    --train_data_path ./Charades/charades_annotation/train.json \
-    --eval_data_path ./Charades/charades_annotation/val.json \
-    --video_folder ./Charades/Charades_v1 \
-    --dataset_name xxx \
-    --max_prompt_length 8192 \
-    --max_completion_length 1024 \
-    --num_generations 8 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 2 \
-    --logging_steps 1 \
-    --bf16 \
-    --torch_dtype bfloat16 \
-    --data_seed 42 \
-    --gradient_checkpointing true \
-    --attn_implementation flash_attention_2 \
-    --num_train_epochs 2 \
-    --run_name $WANDB_NAME \
-    --report_to wandb \
-    --save_steps 50 \
-    --save_only_model true
-    ```
+```bash
+bash scripts/run_grpo_video.sh
+```
 
 ## Evaluation
 
 After training, evaluate your model's performance:
 
 ```bash
-bash scripts/evaluate.sh # Use evaluate.sh for evaluation.
+bash scripts/evaluate.sh
 ```
-**`evaluate.sh`**
-```
-python evaluate.py --model_base <path_to_your_trained_model> --dataset <charades or activitynet>
-```
-
-> The evaluation script (`evaluate.py`) needs to be implemented to load your model, process the test data, and calculate the relevant metrics (R1@0.3, R1@0.5, R1@0.7, etc.).
 
 ## Results
 
--   **Charades-STA (Finetuned)**
+**HCSTVG**
 
-TimeZero outperforms previous state-of-the-art methods by a large margin. 
+STVG-R1 establishes new state-of-the-art results on both HCSTVG-v1 and HCSTVG-v2. 
 
-| Method                | Type | R1@0.3 | R1@0.5 | R1@0.7 |
-| --------------------- | ---- | ------ | ------ | ------ |
-| EaTR (VLP sota)       | VLP  | -      | 68.4   | 44.9   |
-| TimeSuite (LVLM sota) | SFT  | 79.4   | 67.1   | 43.0   |
-| TimeZero (ours)       | RL   | 83.3   | 72.5   | 47.9   |
+-   **HCSTVG-v1:**
 
--   **ActivityNet (Finetuned)**
+| Models | m_tIoU | m_vIoU | vIoU@0.3 | vIoU@0.5 |
+| ------ | ------ | ------ | -------- | -------- |
+| TubeDETR | - | 32.4 | 49.8 | 23.5 |
+| STVGFormer | - | 36.9 | 62.2 | 34.8 |
+| CG-STVG | 52.8 | 38.4 | 61.5 | 36.3 |
+| TA-STVG | 53.0 | _39.1_ | 63.1 | 36.8 |
+| SpaceVLLM-7B | **56.9** | **39.3** | _66.6_ | _36.9_ |
+| **STVG-R1 (ours)** | **56.9** | _39.1_ | **66.7** | **38.6** |
 
-TimeZero surpasses previous state-of-the-art LVLMs. 
+-   **HCSTVG-v2:**
 
-| Method            | Type | R1@0.3 | R1@0.5 | R1@0.7 |
-| ----------------- | ---- | ------ | ------ | ------ |
-| EaTR (VLP sota)   | VLP  | -      | 58.18  | 37.64  |
-| TRACE (LVLM sota) | SFT  | 54.0   | 37.7   | 24.0   |
-| TimeZero (ours)   | RL   | 68.6   | 47.3   | 26.9   |
+| Models | m_tIoU | m_vIoU | vIoU@0.3 | vIoU@0.5 |
+| ------ | ------ | ------ | -------- | -------- |
+| TubeDETR | 53.9 | 36.4 | 58.8 | 30.6 |
+| STVGFormer | 58.1 | 38.7 | 65.5 | 33.8 |
+| CG-STVG | 60.0 | 39.5 | 64.5 | 36.3 |
+| TA-STVG | _60.4_ | **40.2** | _65.8_ | _36.7_ |
+| SpaceVLLM-7B | 58.0 | 34.0 | 56.9 | 24.7 |
+| **STVG-R1 (ours)** | **62.0** | **40.2** | **67.8** | **38.8** |
+
+---
+
+**ST-Align**
+
+STVG-R1 significantly improves spatial-temporal grounding and spatial grounding performance, surpassing recent VLMs such as LLava-ST-7B.
+
+| Models | tIoU@0.5 | m_tIoU | vIoU@0.3 | vIoU@0.5 | m_vIoU |
+| ------ | -------- | ------ | -------- | -------- | ------ |
+| GroundingGPT-7B | 7.1 | 12.2 | 19.7 | 2.9 | 9.2 |
+| LLava-ST-7B | **44.6** | _43.8_ | _47.2_ | _21.1_ | _22.8_ |
+| Qwen2.5-VL-7B | 35.2 | 37.4 | 44.6 | 17.1 | 14.3 |
+| **STVG-R1 (ours)** | _43.6_ | **45.1** | **60.3** | **25.9** | **23.4** |
+
+---
+
+**MeViS (Zero-shot)**
+
+STVG-R1 also demonstrates strong zero-shot generalization.
+
+| Models | J | F | J&F |
+| ------ | ---- | ---- | ---- |
+| URVOS | 25.7 | 29.9 | 27.8 |
+| MTTR | 28.8 | 31.2 | 30.0 |
+| VISA | 40.7 | 46.3 | 43.5 |
+| VideoGlaMM | _42.1_ | _48.2_ | _45.2_ |
+| **STVG-R1 (ours)** | **44.7** | **50.0** | **47.3** |
+
+---
+
+**Charades-STA and TVGBench (Zero-shot)**
+
+STVG-R1 achieves leading performance on temporal video grounding benchmarks.
+
+| Models | Charades@0.3 | Charades@0.5 | TVGBench@0.3 | TVGBench@0.5 |
+| ------ | ------------ | ------------ | ------------ | ------------ |
+| TimeSuite | 69.9 | 48.7 | 31.1 | 18.0 |
+| LLaVA-ST | _63.1_ | _44.8_ | - | - |
+| Time-R1 | **78.1*** | **60.8*** | _41.8_ | **29.4** |
+| **STVG-R1 (ours)** | **73.2** | **52.5** | **42.5** | _27.4_ |
+
 
 ## Acknowledgements
 
 We thank the authors of the following projects for their contributions:
 
-*   [TRACE](https://github.com/gyxxyg/TRACE)
-*    [R1-V](https://github.com/Deep-Agent/R1-V)
+*   [GroundedSAM2](https://github.com/IDEA-Research/Grounded-SAM-2)
+*    [Time-R1](https://github.com/www-Ye/Time-R1)
 *   [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL)
 
 ## Citation
 
 
-If you find our work useful, please consider cite our paper :).
-
-
 ```bibtex
-@article{wang2025timer1,
-      title={Time-R1: Post-Training Large Vision Language Model for Temporal Video Grounding}, 
-      author={Wang, Ye and Wang, Ziheng and Xu, Boshen and Du, Yang and Lin, Kejun and Xiao, Zihan and Yue, Zihao and Ju, Jianzhong and Zhang, Liang and Yang, Dingyi and Fang, Xiangnan and He, Zewen and Luo, Zhenbo and Wang, Wenxuan and Lin, Junqi and Luan, Jian and Jin, Qin},
-      journal={arXiv preprint arXiv:2503.13377},
-      year={2025},
-}
-```
-
-```bibtex
-@article{wang2025timezero,
-      title={TimeZero: Temporal Video Grounding with Reasoning-Guided LVLM},
-      author={Wang, Ye and Xu, Boshen and Yue, Zihao and Xiao, Zihan and Wang, Ziheng and Zhang, Liang and Yang, Dingyi and Wang, Wenxuan and Jin, Qin},
-      journal={arXiv preprint arXiv:2503.13377},
-      year={2025}
+@article{
 }
 ```

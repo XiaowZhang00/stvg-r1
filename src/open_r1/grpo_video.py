@@ -31,6 +31,9 @@ from tqdm import tqdm
 import torch
 import json
 import random
+import torch.serialization
+import numpy.core.multiarray
+torch.serialization.add_safe_globals([numpy.core.multiarray._reconstruct])
 
 @dataclass
 class GRPOScriptArguments(ScriptArguments):
@@ -75,67 +78,103 @@ class GRPOScriptArguments(ScriptArguments):
 
 
 def parse_timestamp_output(output_string):
-    """Parses timestamp output, similar to the example code."""
-    # 1. Find all <answer>...</answer> blocks.
+    """
+    Parses Target ID, start time, and end time from model output.
+    Returns: (target_id, start_time, end_time) or (None, None, None) if parsing fails.
+    """
+    # 1. Extract the last <answer> block
     answer_matches = re.findall(r"<answer>(.*?)</answer>", output_string, re.DOTALL)
-
     if not answer_matches:
-        return None  # No <answer> tags found.
+        print("Error: No <answer> tag found.")
+        return None, None, None
+    last_answer = answer_matches[-1].strip()
+    print(f"Raw answer content: {last_answer}")  # Debug log
+    # 2. Parse Target ID (single ID only)
+    id_match = re.search(
+        r"Target ID:\s*(\d+)", 
+        last_answer, 
+        re.IGNORECASE
+    )
+    target_id = int(id_match.group(1)) if id_match else None
+    # 3. Parse Time range (supports "to" or "and" as separators)
+    time_match = re.search(
+        r"Time range:\s*(\d+\.?\d*)\s*(?:to|and)\s*(\d+\.?\d*)", 
+        last_answer, 
+        re.IGNORECASE
+    )
+    if time_match:
+        start_time = float(time_match.group(1))
+        end_time = float(time_match.group(2))
+    else:
+        start_time = end_time = None
+    # 4. Validation
+    if None in (target_id, start_time, end_time):
+        print(f"Failed to parse: ID={target_id}, Time={start_time}-{end_time}")
+        return None, None, None
+    return target_id, start_time, end_time
 
-    # 2. Use the content of the *last* <answer> block.
-    last_answer_content = answer_matches[-1]
-    print('last_answer_content:', last_answer_content)
-
-    matches = re.findall(r"(\d+\.?\d*) (to|and) (\d+\.?\d*)", last_answer_content, re.IGNORECASE)
-    if not matches:
-        return None
-    last_match = matches[-1]
-    start_time = float(last_match[0])
-    end_time = float(last_match[2])
-    return start_time, end_time
-
-def iou_timestamp_reward(completions, solution, durations, **kwargs): # Modified reward function name and arguments
-    """Reward function that calculates IoU between predicted and ground truth timestamps."""
-    # print(completions, solution, durations)
-    # contents = [completion[0]["content"] for completion in completions]
+def iou_timestamp_reward(completions, solution, durations, **kwargs):
+    """
+    Combined reward function for spatial-temporal localization.
+    Args:
+        completions: List of model outputs (strings)
+        solutions: List of tuples (gt_start, gt_end, gt_id)
+        durations: List of video durations (unused in current implementation)
+    Returns:
+        List of combined rewards (time_iou + spatial_reward)
+    """
     rewards = []
-    # print(completions, solution, durations, **kwargs)
     current_time = datetime.now().strftime("%d-%H-%M-%S-%f")
-    for content, sol, duration in zip(completions, solution, durations): # Added video_durations
-        reward = 0.0
-        parsed_times = parse_timestamp_output(content)
-        start_time, end_time = 0, 0
-        gt_start, gt_end = sol
-        # s, e = gt_start / duration, gt_end / duration
-        s, e = gt_start, gt_end
-        if parsed_times:
-            start_time, end_time = parsed_times
-            from_number = start_time
-            to_number = end_time
+    
+    # 获取当前训练步数（如果可用）
+    current_step = kwargs.get('current_step', 0)
+    if isinstance(current_step, list):
+        current_step = current_step[0] if current_step else 0
+    
+    for content, sol, duration in zip(completions, solution, durations):
+        # 1. Parse model output
+        pred_id, pred_start, pred_end = parse_timestamp_output(content)
+        gt_id = sol[-3]
+        gt_start = sol[-2]
+        gt_end = sol[-1]
+        n_markers = (len(sol) - 3) // 2
 
-            intersection = max(0, min(to_number, e) - max(from_number, s))
-            union = max(to_number, e) - min(from_number, s)
-            if union > 0:
-                iou = intersection / union   # 0.1 0.3
+        # 2. Calculate Time IoU
+        time_reward = 0.0
+        if None not in (pred_start, pred_end):
+            intersection = max(0, min(pred_end, gt_end) - max(pred_start, gt_start))
+            union = max(pred_end, gt_end) - min(pred_start, gt_start)
+            time_reward = intersection / union if union > 0 else 0.0
+            # # Use the timereward proposed by Time-R1
+            # video_duration = duration
+            # start_diff = abs(pred_start - gt_start) / video_duration
+            # end_diff = abs(pred_end - gt_end) / video_duration
+            # time_reward = time_reward * (1 - start_diff) * (1 - end_diff)
+        
+        # # 3. Calculate Spatial Reward (ID match)
+        spatial_reward = 1.0 if (pred_id == gt_id) else 0.0
 
-            reward = iou
-
-        print('gt second:', gt_start, gt_end)
-        print('pred second:', start_time, end_time)
-        print(f"------------- {current_time} IoU reward: {reward} -------------\n")
-
-        rewards.append(reward)
-
+        combined_reward = time_reward + spatial_reward
+        reward_type = "combined"
+        
+        # 5. Logging
+        log_msg = (
+            f"Content: {content}\n"
+            f"GT: ID={gt_id}, Time={gt_start}-{gt_end}\n"
+            f"Pred: ID={pred_id}, Time={pred_start}-{pred_end}\n"
+            f"Time IoU: {time_reward:.2f}, Spatial Reward: {spatial_reward}\n"
+            f"Step: {current_step}, Reward Type: {reward_type}\n"
+            f"------------- {current_time} Combined Reward: {combined_reward:.2f} -------------\n"
+        )
+        print(log_msg)
+        
         if os.getenv("DEBUG_MODE") == "true":
-            log_path = os.getenv("LOG_PATH")
-            with open(log_path, "a") as f:
-                f.write(f"Content: {content}\n")
-                f.write(f"pred second: {str(start_time)}, {str(end_time)}\n")
-                f.write(f"gt second: {str(gt_start)}, {str(gt_end)}\n")
-                f.write(f"------------- {current_time} IoU reward: {reward} -------------\n") # Modified log message
-
+            with open(os.getenv("LOG_PATH"), "a") as f:
+                f.write(log_msg)
+        
+        rewards.append(combined_reward)
+    
     return rewards
-
 
 def format_reward(completions, **kwargs):
     """Reward function that checks if the completion has a specific format."""
@@ -150,19 +189,14 @@ reward_funcs_registry = {
     "format": format_reward,
 }
 
-QUESTION_TEMPLATE = """To accurately pinpoint the event "[EVENT]" in the video, determine the precise time period of the event.
-
-Output your thought process within the <think> </think> tags, including analysis with either specific timestamps (xx.xx) or time ranges (xx.xx to xx.xx) in <timestep> </timestep> tags.
-
-Then, provide the start and end times (in seconds, precise to two decimal places) in the format "start time to end time" within the <answer> </answer> tags. For example: "12.54 to 17.83"."""
-
 def load_json_dataset(train_data_path, eval_data_path, video_folder, preprocessed_data_path=None): # Modified to accept preprocessed_data_path
     def create_dataset_from_json(file_path, split_name):
         with open(file_path, 'r') as f:
             data = json.load(f)
         examples = []
         for video_id, video_data in tqdm(data.items()):
-            for sentence_id, (timestamps, sentence) in enumerate(zip(video_data['timestamps'], video_data['sentences'])):
+            # for sentence_id, (timestamps, objectid, marker_scores, marker_ids, sentence) in enumerate(zip(video_data['timestamps'], video_data['objectid'], video_data['marker_scores'], video_data['marker_ids'], video_data['sentences'])):
+            for sentence_id, (timestamps, objectid, sentence) in enumerate(zip(video_data['timestamps'], video_data['objectid'], video_data['sentences'])):
                 sentence = sentence.strip().lower()
                 if sentence.endswith("."):
                     sentence = sentence[:-1]
@@ -176,10 +210,10 @@ def load_json_dataset(train_data_path, eval_data_path, video_folder, preprocesse
                 if video_path is None:
                     print(f"Warning: Video file not found for ID: {video_id}")
                     continue
-
+                print('video_path:', video_path)
                 example = {
                     "problem": sentence,
-                    "solution": (timestamps[0], timestamps[1]),
+                    "solution": [objectid, timestamps[0], timestamps[1]],
                     "video_path": video_path,
                     "durations": video_data['duration'],
                     "preprocessed_path": "" # Initialize preprocessed_path as None
@@ -238,23 +272,6 @@ def main(script_args, training_args, model_args):
         script_args.preprocessed_data_path # Pass preprocessed_data_path
     )
 
-
-    # Format into conversation
-    # QUESTION_TEMPLATE = "{Question}  Output the thinking process in <think> </think> and final answer (number) in <answer> </answer> tags."
-
-    # def make_conversation_image(example):
-    #     return {
-    #         "prompt": [
-    #             {
-    #                 "role": "user",
-    #                 "content": [
-    #                     {"type": "image"},
-    #                     {"type": "text", "text": QUESTION_TEMPLATE.format(Question=example["problem"])},
-    #                 ],
-    #             },
-    #         ],
-    #     }
-
     
     trainer_cls = Qwen2VLGRPOTrainer if not training_args.use_vllm else Qwen2VLGRPOVLLMTrainer
     print("using: ", trainer_cls)
@@ -285,6 +302,7 @@ def main(script_args, training_args, model_args):
     )
 
     # Train and push the model to the Hub
+    # trainer.train(resume_from_checkpoint="/data/TimeZero-main/outputs_markervideo_vidstg1/checkpoint-50")
     trainer.train()
 
     # Save and push to hub

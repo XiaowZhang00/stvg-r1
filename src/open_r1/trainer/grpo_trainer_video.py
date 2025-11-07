@@ -63,11 +63,15 @@ RewardFunc = Union[str, PreTrainedModel, Callable[[list, list], list[float]]]
 SYSTEM_PROMPT = "You are a video analysis expert."
 
 
-QUESTION_TEMPLATE = """To accurately pinpoint the event "[EVENT]" in the video, determine the precise time period of the event.
+QUESTION_TEMPLATE = """Each object in the video is marked with a red number at its center, representing its object ID. To accurately pinpoint the event "[EVENT]" in the video:
 
-Output your thought process within the <think> </think> tags, including analysis with either specific timestamps (xx.xx) or time ranges (xx.xx to xx.xx) in <timestep> </timestep> tags.
+1.Determine the precise time period of the event occurs.
 
-Then, provide the start and end times (in seconds, precise to two decimal places) in the format "start time to end time" within the <answer> </answer> tags. For example: "12.54 to 17.83"."""
+2.Identify which object ID is corresponding to the described event.
+
+Output your thought process within the <think> </think> tags, including both a temporal analysis (e.g., specific timestamps "xx.xx" or time ranges "xx.xx to xx.xx") and a spatial analysis (e.g., object ID "xx").
+
+Then, provide the start and end times (in seconds, precise to two decimal places), and object ID in the format "Target ID: [ID], Time range: [start time to end time]" within the <answer> </answer> tags. For example: "Target ID: 1, Time range: 12.54 to 17.83"."""
 
 class Qwen2VLGRPOTrainer_Video(Trainer):
     """

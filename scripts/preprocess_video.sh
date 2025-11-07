@@ -1,14 +1,14 @@
 #!/bin/bash
 
-MODEL_PATH="/share/pretrain/mllm/Qwen2.5-VL-7B-Instruct"
-DATASET="charades"
-TRAIN_DATA="./Charades/charades_annotation/train.json"
-EVAL_DATA="./Charades/charades_annotation/val.json"
-VIDEO_FOLDER="./Charades/Charades_v1"
-MAX_PIX=3584
+MODEL_PATH="/data/Qwen2.5-VL-7B-Instruct"
+DATASET="hcstvgv2"
+TRAIN_DATA="./hcstvgv2/anno_v2/train_marker_v2.json"
+EVAL_DATA="./hcstvgv2/anno_v2/val_marker_v2.json"
+VIDEO_FOLDER="./vipdata/hcstvgv2video"
+MAX_PIX=2048
 MIN_PIX=16
 NUM_WORKERS=16
-OUTPUT_DIR=./Charades_preprocessed_data_maxpix_3584
+OUTPUT_DIR=./hcstvgv2_preprocessed_data_maxpix_2048
 
 python preprocess_dataset.py \
   --model_name $MODEL_PATH \
