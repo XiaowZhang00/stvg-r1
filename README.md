@@ -171,6 +171,11 @@ We thank the authors of the following projects for their contributions:
 
 
 ```bibtex
-@article{
+@article{zhang2026stvg,
+  title={STVG-R1: Incentivizing Instance-Level Reasoning and Grounding in Videos via Reinforcement Learning},
+  author={Zhang, Xiaowen and Gao, Zhi and Jiao, Licheng and Li, Lingling and Li, Qing},
+  journal={arXiv preprint arXiv:2602.11730},
+  year={2026}
 }
 ```
+
